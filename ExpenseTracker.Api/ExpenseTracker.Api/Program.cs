@@ -1,6 +1,4 @@
-using ExpenseTracker.Api.Services;
-using ExpenseTracker.Api.Services.Interfaces;
-using System.Text.Json.Serialization;
+using ExpenseTracker.Infrastructure.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,9 +9,7 @@ builder.Services.AddControllers(x =>
 });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddScoped<ICategoryService, CategoryService>();
-builder.Services.AddScoped<ITransferService, TransferService>();
-builder.Services.AddScoped<IWalletService,WalletService>();
+builder.Services.RegisterInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
