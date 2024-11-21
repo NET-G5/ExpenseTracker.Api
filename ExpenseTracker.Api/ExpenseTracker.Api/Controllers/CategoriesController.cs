@@ -1,9 +1,11 @@
-﻿using ExpenseTracker.Api.Models;
-using ExpenseTracker.Api.QueryParameters;
-using ExpenseTracker.Api.Services.Interfaces;
+﻿using ExpenseTracker.Application.DTOs;
+using ExpenseTracker.Application.Interfaces;
+using ExpenseTracker.Application.QueryParameters;
+using ExpenseTracker.Application.Requests.Category;
+using ExpenseTracker.Application.Requests.Common;
 using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+
+// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace ExpenseTracker.Api.Controllers;
 
@@ -12,113 +14,58 @@ namespace ExpenseTracker.Api.Controllers;
 public class CategoriesController : ControllerBase
 {
     private readonly ICategoryService _categoryService;
-    private readonly ITransferService _transferSerivice;
 
-    public CategoriesController(ICategoryService categoryService, ITransferService transfers)
+    public CategoriesController(ICategoryService categoryService)
     {
         _categoryService = categoryService;
-        _transferSerivice = transfers;
     }
 
     [HttpGet]
-    [HttpHead]
-    public async Task<ActionResult<List<Category>>> GetAll([FromQuery] CategoryFilter filter)
+    public async Task<ActionResult<List<CategoryDto>>> GetAsync(
+        [FromBody] UserRequest request,
+        [FromQuery] QueryParametersBase queryParameters)
     {
-        var categories = await _categoryService.GetAsync(filter);
+        var categories = await _categoryService.GetAsync(request, queryParameters);
 
         return Ok(categories);
     }
 
-    [HttpGet("{id:int:min(1):max(500)}", Name = "GetCategoryById")]
-    public async Task<ActionResult<ResultWithLinks<Category>>> GetById([FromRoute] int id)
+    [HttpGet("{id:int:min(1)}", Name = nameof(GetCategoryByIdAsync))]
+    public async Task<ActionResult<CategoryDto>> GetCategoryByIdAsync(int id)
     {
         var category = await _categoryService.GetByIdAsync(id);
-        var result = new ResultWithLinks<Category>(category);
 
-        AddLinks(result);
-        Response.Headers.Append("links", JsonSerializer.Serialize(result.Links));
-
-        return Ok(result.Data);
-    }
-
-    [HttpGet("{id}/transfers")]
-    public async Task<ActionResult<List<Transfer>>> GetTransfers([FromRoute] int id)
-    {
-        var transfers = await _transferSerivice.GetAsync(new TransferFilter { CategoryId = 0 });
-
-        return Ok(transfers);
+        return Ok(category);
     }
 
     [HttpPost]
-    public async Task<ActionResult<ResultWithLinks<Category>>> Create([FromBody] Category category)
+    public async Task<ActionResult<CategoryDto>> Post([FromBody] CreateCategoryRequest request)
     {
-        var createdCategory = await _categoryService.CreateAsync(category);
+        var response = await _categoryService.CreateAsync(request);
 
-        return CreatedAtRoute("GetCategoryById", new { id = createdCategory.Id }, createdCategory);
+        return CreatedAtAction(nameof(GetCategoryByIdAsync), response, new { id = response.Id });
     }
 
-    [HttpPut("{id}")]
-    public async Task<ActionResult> Update([FromRoute] int id, [FromBody] Category category)
+    [HttpPut("{id:int:min(1)}")]
+    public async Task<ActionResult> PutAsync(
+        [FromRoute] int id, 
+        [FromBody] UpdateCategoryRequest request)
     {
-        if (id != category.Id)
+        if (id != request.Id)
         {
-            return BadRequest($"Route id: {id} does not match with body id: {category.Id}");
+            return BadRequest($"Route parameter does not match with body parameter: {request.Id}");
         }
 
-        await _categoryService.UpdateAsync(category);
+        await _categoryService.UpdateAsync(request);
 
         return NoContent();
     }
 
-    [HttpDelete]
-    public async Task<ActionResult> Delete([FromRoute] int id)
+    [HttpDelete("{categoryId:int:min(1)}")]
+    public async Task<ActionResult> DeleteAsync([FromRoute] CategoryRequest request)
     {
-        await _categoryService.DeleteAsync(id);
+        await _categoryService.DeleteAsync(request);
 
         return NoContent();
-    }
-
-    [HttpOptions]
-    public ActionResult<List<string>> GetOptions()
-    {
-        var options = new List<string> { "GET", "POST", "PUT", "DELETE" };
-
-        Response.Headers.AppendList("options", options);
-        return Ok(options);
-    }
-
-    private void AddLinks(ResultWithLinks<Category> result)
-    {
-        var deleteUrl = Url.Action("Delete", new { result.Data.Id });
-
-        if (deleteUrl != null)
-        {
-            var link = new Link(deleteUrl, "delete", "DELETE");
-            result.AddLink(link);
-        }
-
-        var updateUrl = Url.Action("Update", new { result.Data.Id });
-
-        if (updateUrl != null)
-        {
-            var link = new Link(updateUrl, "update", "PUT");
-            result.AddLink(link);
-        }
-
-        var getUrl = Url.Action("GetById", new { result.Data.Id });
-
-        if (getUrl != null)
-        {
-            var link = new Link(getUrl, "self", "GET");
-            result.AddLink(link);
-        }
-
-        var childrenUrl = Url.Action(nameof(GetTransfers), new { result.Data.Id });
-
-        if (childrenUrl != null)
-        {
-            var link = new Link(childrenUrl, "transfers", "GET");
-            result.AddLink(link);
-        }
     }
 }
