@@ -29,7 +29,7 @@ internal sealed class TransferService : ITranferService
     public async Task<TransferDto> CreateAsync(CreateTranferRequest request)
     {
         var category = await _context.Categories
-            .FirstOrDefaultAsync(x => x.Id == request.CategoryId && x.OwnerId == _currentUserService.GetCurrentUserId());
+            .FirstOrDefaultAsync(x => x.Id == request.CategoryId && x.OwnerId == _currentUserService.GetUserId());
         
         if (category is null)
         {
@@ -37,7 +37,7 @@ internal sealed class TransferService : ITranferService
         }
 
         var wallet = await _context.Wallets
-            .FirstOrDefaultAsync(x => x.Id == request.WalletId && x.OwnerId == _currentUserService.GetCurrentUserId());
+            .FirstOrDefaultAsync(x => x.Id == request.WalletId && x.OwnerId == _currentUserService.GetUserId());
         
         if (wallet is null)
         {
@@ -59,14 +59,14 @@ internal sealed class TransferService : ITranferService
         ArgumentNullException.ThrowIfNull(request);
 
         var transferToDelete = await _context.Transfers
-            .FirstOrDefaultAsync(x => x.Id == request.TransferId && x.Wallet.OwnerId == _currentUserService.GetCurrentUserId());
+            .FirstOrDefaultAsync(x => x.Id == request.TransferId && x.Wallet.OwnerId == _currentUserService.GetUserId());
 
         if (transferToDelete is null)
         {
             throw new EntityNotFoundException($"Transfer with id: {request.TransferId} is not found.");
         }
 
-        if (transferToDelete.Wallet.OwnerId != _currentUserService.GetCurrentUserId())
+        if (transferToDelete.Wallet.OwnerId != _currentUserService.GetUserId())
         {
             throw new ApplicationException($"Current user has no right to delete transfer with id: {request.TransferId}.");
         }
@@ -79,7 +79,7 @@ internal sealed class TransferService : ITranferService
     {
         var query = _context.Transfers
             .AsNoTracking()
-            .Where(x => x.Wallet.OwnerId == _currentUserService.GetCurrentUserId());
+            .Where(x => x.Wallet.OwnerId == _currentUserService.GetUserId());
 
         if (!string.IsNullOrEmpty(queryParameters.Search))
         {
@@ -97,7 +97,7 @@ internal sealed class TransferService : ITranferService
         ArgumentNullException.ThrowIfNull(request);
 
         var transfer = await _context.Transfers
-            .FirstOrDefaultAsync(x => x.Id == request.TransferId && x.Wallet.OwnerId == _currentUserService.GetCurrentUserId());
+            .FirstOrDefaultAsync(x => x.Id == request.TransferId && x.Wallet.OwnerId == _currentUserService.GetUserId());
 
         if (transfer is null)
         {
@@ -113,7 +113,7 @@ internal sealed class TransferService : ITranferService
         ArgumentNullException.ThrowIfNull(request);
 
         var transfer = await _context.Transfers
-            .FirstOrDefaultAsync(x => x.Id == request.Id && x.Wallet.OwnerId == _currentUserService.GetCurrentUserId());
+            .FirstOrDefaultAsync(x => x.Id == request.Id && x.Wallet.OwnerId == _currentUserService.GetUserId());
 
         if (transfer is null)
         {

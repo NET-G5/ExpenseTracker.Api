@@ -1,5 +1,6 @@
 ﻿using ExpenseTracker.Domain.Entities;
 using ExpenseTracker.Domain.Interfaces;
+using ExpenseTracker.Infrastructure.Persistence.Interceptors;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -16,13 +17,6 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser<Guid>, Identi
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) 
         : base(options)
     {
-    }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        // optionsBuilder.AddInterceptors(new AuditInterceptor());
-
-        base.OnConfiguring(optionsBuilder);
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -70,6 +64,4 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser<Guid>, Identi
 
         #endregion
     }
-
-    public Task<int> SaveChangesAsync() => SaveChangesAsync();
 }

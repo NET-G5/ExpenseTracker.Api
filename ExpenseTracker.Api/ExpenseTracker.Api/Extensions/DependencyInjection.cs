@@ -1,4 +1,5 @@
 using System.Text;
+using ExpenseTracker.Application.Configurations;
 using ExpenseTracker.Application.Extensions;
 using ExpenseTracker.Domain.Interfaces;
 using ExpenseTracker.Infrastructure.Extensions;
@@ -13,11 +14,11 @@ public static class DependencyInjection
 {
     public static IServiceCollection RegisterServices(this IServiceCollection services, IConfiguration configuration)
     {
-        services.RegisterApplication();
+        services.RegisterApplication(configuration);
         services.RegisterInfrastructure(configuration);
         services.AddScoped<IApplicationDbContext, ApplicationDbContext>();
 
-        AddAuthenticaton(services);
+        AddAuthenticaton(services, configuration);
 
         services.AddSwaggerGen(c =>
         {
@@ -59,8 +60,16 @@ public static class DependencyInjection
         return services;
     }
 
-    private static void AddAuthenticaton(IServiceCollection services)
+    private static void AddAuthenticaton(IServiceCollection services, IConfiguration configuration)
     {
+        var section = configuration.GetSection(JwtOptions.SectionName);
+        var jwtOptions = section.Get<JwtOptions>();
+
+        if (jwtOptions is null)
+        {
+            throw new InvalidOperationException("JWT configuration settings did not load correctly.");
+        }
+
         services
             .AddAuthentication(options =>
             {
@@ -79,10 +88,10 @@ public static class DependencyInjection
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
                     
-                    ValidIssuer = "expense-tracker-api",
-                    ValidAudience = "expense-tracker",
+                    ValidIssuer = jwtOptions.Issuer,
+                    ValidAudience = jwtOptions.Audience,
                     IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes("cacd9786-4fea-413c-94af-abe7b6ee54f4"))
+                        Encoding.UTF8.GetBytes(jwtOptions.SecretKey))
                 };
             });
     }
