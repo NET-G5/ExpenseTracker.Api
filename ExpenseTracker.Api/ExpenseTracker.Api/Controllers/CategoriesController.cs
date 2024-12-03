@@ -2,13 +2,13 @@
 using ExpenseTracker.Application.Interfaces;
 using ExpenseTracker.Application.QueryParameters;
 using ExpenseTracker.Application.Requests.Category;
-using ExpenseTracker.Application.Requests.Common;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+using Newtonsoft.Json;
 
 namespace ExpenseTracker.Api.Controllers;
 
+[Authorize]
 [Route("api/categories")]
 [ApiController]
 public class CategoriesController : ControllerBase
@@ -21,25 +21,24 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<CategoryDto>>> GetAsync(
-        [FromBody] UserRequest request,
-        [FromQuery] QueryParametersBase queryParameters)
+    [HttpHead]
+    public async Task<ActionResult<List<CategoryDto>>> GetAsync([FromQuery] QueryParametersBase queryParameters)
     {
-        var categories = await _categoryService.GetAsync(request, queryParameters);
+        var categories = await _categoryService.GetAsync(queryParameters);
 
         return Ok(categories);
     }
 
-    [HttpGet("{id:int:min(1)}", Name = nameof(GetCategoryByIdAsync))]
-    public async Task<ActionResult<CategoryDto>> GetCategoryByIdAsync(int id)
+    [HttpGet("{categoryId:int:min(1)}", Name = nameof(GetCategoryByIdAsync))]
+    public async Task<ActionResult<CategoryDto>> GetCategoryByIdAsync([FromRoute] CategoryRequest request)
     {
-        var category = await _categoryService.GetByIdAsync(id);
+        var category = await _categoryService.GetByIdAsync(request);
 
         return Ok(category);
     }
 
     [HttpPost]
-    public async Task<ActionResult<CategoryDto>> Post([FromBody] CreateCategoryRequest request)
+    public async Task<ActionResult<CategoryDto>> CreateAsync([FromBody] CreateCategoryRequest request)
     {
         var response = await _categoryService.CreateAsync(request);
 
@@ -67,5 +66,15 @@ public class CategoriesController : ControllerBase
         await _categoryService.DeleteAsync(request);
 
         return NoContent();
+    }
+
+    [HttpOptions]
+    public IActionResult GetOptions()
+    {
+        string[] options = ["GET", "POST", "PUT", "DELETE", "HEAD","PATCH"];
+
+        HttpContext.Response.Headers.Append("X-Options", JsonConvert.SerializeObject(options));
+
+        return Ok(options);
     }
 }
