@@ -1,11 +1,8 @@
-﻿using ExpenseTracker.Application.Requests.Common;
-using ExpenseTracker.Domain.Enums;
+﻿using ExpenseTracker.Domain.Enums;
 
 namespace ExpenseTracker.Application.Requests.Category;
 
-public sealed record CreateCategoryRequest(
-    Guid UserId,
+public record CreateCategoryRequest(
     string Name,
     string? Description,
-    CategoryType Type)
-    : UserRequest(UserId: UserId);
+    CategoryType Type);
