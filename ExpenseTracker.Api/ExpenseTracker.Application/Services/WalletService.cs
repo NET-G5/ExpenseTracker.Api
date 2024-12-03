@@ -34,7 +34,7 @@ public class WalletService : IWalletService
     {
         var query = _context.Wallets
             .AsNoTracking()
-            .Where(w => w.OwnerId == _currentUserService.GetCurrentUserId());
+            .Where(w => w.OwnerId == _currentUserService.GetUserId());
 
         if (!string.IsNullOrEmpty(queryParameters.Search))
         {
@@ -53,7 +53,7 @@ public class WalletService : IWalletService
         ArgumentNullException.ThrowIfNull(request);
 
         var wallet = await _context.Wallets
-            .FirstOrDefaultAsync(w => w.Id == request.WalletId && w.OwnerId == _currentUserService.GetCurrentUserId());
+            .FirstOrDefaultAsync(w => w.Id == request.WalletId && w.OwnerId == _currentUserService.GetUserId());
 
         if (wallet is null)
         {
@@ -66,7 +66,7 @@ public class WalletService : IWalletService
 
     public async Task<WalletDto> CreateAsync(CreateWalletRequest request)
     {
-        var owner = await _userManager.FindByIdAsync(_currentUserService.GetCurrentUserId().ToString());
+        var owner = await _userManager.FindByIdAsync(_currentUserService.GetUserId().ToString());
 
         if (owner is null)
         {
@@ -74,7 +74,7 @@ public class WalletService : IWalletService
         }
 
         var wallet = _mapper.Map<Wallet>(request);
-        wallet.OwnerId = _currentUserService.GetCurrentUserId();
+        wallet.OwnerId = _currentUserService.GetUserId();
 
         _context.Wallets.Add(wallet);
         await _context.SaveChangesAsync();
@@ -88,7 +88,7 @@ public class WalletService : IWalletService
         ArgumentNullException.ThrowIfNull(request);
 
         var wallet = await _context.Wallets
-            .FirstOrDefaultAsync(w => w.Id == request.Id && w.OwnerId == _currentUserService.GetCurrentUserId());
+            .FirstOrDefaultAsync(w => w.Id == request.Id && w.OwnerId == _currentUserService.GetUserId());
 
         if (wallet is null)
         {
@@ -108,7 +108,7 @@ public class WalletService : IWalletService
         ArgumentNullException.ThrowIfNull(request);
 
         var wallet = await _context.Wallets
-            .FirstOrDefaultAsync(w => w.Id == request.WalletId && w.OwnerId == _currentUserService.GetCurrentUserId());
+            .FirstOrDefaultAsync(w => w.Id == request.WalletId && w.OwnerId == _currentUserService.GetUserId());
 
         if (wallet is null)
         {

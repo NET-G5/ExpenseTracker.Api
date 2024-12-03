@@ -13,7 +13,7 @@ public sealed class CurrentUserService : ICurrentUserService
         _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
     }
     
-    public Guid GetCurrentUserId()
+    public Guid GetUserId()
     {
         var user = _httpContextAccessor.HttpContext?.User 
                    ?? throw new InvalidOperationException("Current HTTP context does not contain a user.");
@@ -27,5 +27,16 @@ public sealed class CurrentUserService : ICurrentUserService
         }
         
         throw new InvalidOperationException($"Invalid user ID format: {userId}");
+    }
+
+    public string GetUserName()
+    {
+        var user = _httpContextAccessor.HttpContext?.User
+            ?? throw new InvalidOperationException($"Unable to get user info from HttpContext.");
+
+        var userName = user.FindFirst(ClaimTypes.Name)?.Value
+            ?? throw new InvalidOperationException("User does not have Name claim.");
+
+        return userName;
     }
 }

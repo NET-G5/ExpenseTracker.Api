@@ -29,7 +29,7 @@ public class CategoriesController : ControllerBase
         return Ok(categories);
     }
 
-    [HttpGet("{categoryId:int:min(1)}", Name = nameof(GetCategoryByIdAsync))]
+    [HttpGet("{id:int:min(1)}", Name = nameof(GetCategoryByIdAsync))]
     public async Task<ActionResult<CategoryDto>> GetCategoryByIdAsync([FromRoute] CategoryRequest request)
     {
         var category = await _categoryService.GetByIdAsync(request);
@@ -42,7 +42,7 @@ public class CategoriesController : ControllerBase
     {
         var response = await _categoryService.CreateAsync(request);
 
-        return CreatedAtAction(nameof(GetCategoryByIdAsync), response, new { id = response.Id });
+        return CreatedAtAction(nameof(GetCategoryByIdAsync), new { id = response.Id }, response);
     }
 
     [HttpPut("{id:int:min(1)}")]
@@ -60,7 +60,7 @@ public class CategoriesController : ControllerBase
         return NoContent();
     }
 
-    [HttpDelete("{categoryId:int:min(1)}")]
+    [HttpDelete("{id:int:min(1)}")]
     public async Task<ActionResult> DeleteAsync([FromRoute] CategoryRequest request)
     {
         await _categoryService.DeleteAsync(request);
