@@ -8,7 +8,7 @@ public interface ITranferService
 {
     Task<List<TransferDto>> GetAsync(QueryParametersBase queryParameters);
     Task<TransferDto> GetByIdAsync(TransferRequest request);
-    Task<TransferDto> CreateAsync(CreateTranferRequest request);
-    Task UpdateAsync(UpdateTranferRequest request);
+    Task<TransferDto> CreateAsync(CreateTransferRequest request);
+    Task UpdateAsync(UpdateTransferRequest request);
     Task DeleteAsync(TransferRequest request);
 }

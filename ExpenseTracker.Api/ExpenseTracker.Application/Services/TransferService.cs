@@ -25,8 +25,35 @@ internal sealed class TransferService : ITranferService
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _currentUserService = currentUserService ?? throw new ArgumentNullException(nameof(currentUserService));
     }
+    public async Task<List<TransferDto>> GetAsync( QueryParametersBase queryParameters)
+    {
+        var query = _context.Transfers
+            .AsNoTracking()
+            .Where(x => x.Category.OwnerId == _currentUserService.GetUserId());
 
-    public async Task<TransferDto> CreateAsync(CreateTranferRequest request)
+        if (!string.IsNullOrEmpty(queryParameters.Search))
+        {
+            query = query.Where(x => x.Title.Contains(queryParameters.Search)
+                || (x.Notes != null && x.Notes.Contains(queryParameters.Search)));
+        }
+
+        var transfers = await query.ToArrayAsync();
+        var dtos = _mapper.Map<List<TransferDto>>(transfers);
+        return dtos;
+    }
+
+
+    public async Task<TransferDto> GetByIdAsync(TransferRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var transfer = await GetAndValidateTransferAsync(request.Id);
+
+        var dto = _mapper.Map<TransferDto>(transfer);
+        return dto;
+    }
+
+    public async Task<TransferDto> CreateAsync(CreateTransferRequest request)
     {
         var category = await _context.Categories
             .FirstOrDefaultAsync(x => x.Id == request.CategoryId && x.OwnerId == _currentUserService.GetUserId());
@@ -54,78 +81,40 @@ internal sealed class TransferService : ITranferService
         return dto;
     }
 
-    public async Task DeleteAsync(TransferRequest request)
+    public async Task UpdateAsync(UpdateTransferRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var transferToDelete = await _context.Transfers
-            .FirstOrDefaultAsync(x => x.Id == request.TransferId && x.Wallet.OwnerId == _currentUserService.GetUserId());
-
-        if (transferToDelete is null)
-        {
-            throw new EntityNotFoundException($"Transfer with id: {request.TransferId} is not found.");
-        }
-
-        if (transferToDelete.Wallet.OwnerId != _currentUserService.GetUserId())
-        {
-            throw new ApplicationException($"Current user has no right to delete transfer with id: {request.TransferId}.");
-        }
-
-        _context.Transfers.Remove(transferToDelete);
-        await _context.SaveChangesAsync();
-    }
-
-    public async Task<List<TransferDto>> GetAsync(QueryParametersBase queryParameters)
-    {
-        var query = _context.Transfers
-            .AsNoTracking()
-            .Where(x => x.Wallet.OwnerId == _currentUserService.GetUserId());
-
-        if (!string.IsNullOrEmpty(queryParameters.Search))
-        {
-            query = query.Where(x => x.Title.Contains(queryParameters.Search)
-                || (x.Notes != null && x.Notes.Contains(queryParameters.Search)));
-        }
-
-        var transfers = await query.ToArrayAsync();
-        var dtos = _mapper.Map<List<TransferDto>>(transfers);
-        return dtos;
-    }
-
-    public async Task<TransferDto> GetByIdAsync(TransferRequest request)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-
-        var transfer = await _context.Transfers
-            .FirstOrDefaultAsync(x => x.Id == request.TransferId && x.Wallet.OwnerId == _currentUserService.GetUserId());
-
-        if (transfer is null)
-        {
-            throw new EntityNotFoundException($"Transfer with id: {request.TransferId} is not found.");
-        }
-
-        var dto = _mapper.Map<TransferDto>(transfer);
-        return dto;
-    }
-
-    public async Task UpdateAsync(UpdateTranferRequest request)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-
-        var transfer = await _context.Transfers
-            .FirstOrDefaultAsync(x => x.Id == request.Id && x.Wallet.OwnerId == _currentUserService.GetUserId());
-
-        if (transfer is null)
-        {
-            throw new EntityNotFoundException($"Transfer with id: {request.Id} is not found.");
-        }
-
-        transfer.Title = request.Title ?? transfer.Title;
-        transfer.Notes = request.Notes ?? transfer.Notes;
-        transfer.Amount = request.Amount != default ? request.Amount : transfer.Amount;
-        transfer.CategoryId = request.CategoryId != default ? request.CategoryId : transfer.CategoryId;
+      var transfer = await GetAndValidateTransferAsync(request.Id);
 
         _context.Transfers.Update(transfer);
         await _context.SaveChangesAsync();
     }
+
+    public async Task DeleteAsync(TransferRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+      var transfer = await GetAndValidateTransferAsync(request.Id); 
+
+        _context.Transfers.Remove(transfer);
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task<Transfer> GetAndValidateTransferAsync(int transferId)
+    {
+        var ownerId = _currentUserService.GetUserId();
+        var transfer = await _context.Transfers
+            .FirstOrDefaultAsync(x => x.Id == transferId && x.Category.OwnerId == ownerId);
+
+        if (transfer is null)
+        {
+            throw new EntityNotFoundException($"Transfer with id: {transferId} is not found.");
+        }
+
+        return transfer;
+    }
+
+
+
 }

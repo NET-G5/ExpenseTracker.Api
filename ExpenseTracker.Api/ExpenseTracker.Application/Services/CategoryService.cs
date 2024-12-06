@@ -31,9 +31,10 @@ internal sealed class CategoryService : ICategoryService
     {
         ArgumentNullException.ThrowIfNull(queryParameters);
 
+        var ownerId = _currentUserService.GetUserId();
         var query = _context.Categories
             .AsNoTracking()
-            .Where(x => x.OwnerId == _currentUserService.GetUserId());
+            .Where(x => x.OwnerId == ownerId);
 
         if (!string.IsNullOrEmpty(queryParameters.Search))
         {

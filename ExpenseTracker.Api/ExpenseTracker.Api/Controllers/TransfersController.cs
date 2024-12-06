@@ -2,10 +2,12 @@ using ExpenseTracker.Application.DTOs;
 using ExpenseTracker.Application.Interfaces;
 using ExpenseTracker.Application.QueryParameters;
 using ExpenseTracker.Application.Requests.Transfer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ExpenseTracker.Api.Controllers;
 
+[Authorize]
 [Route("api/transfers")]
 [ApiController]
 public class TransferController : ControllerBase
@@ -14,6 +16,7 @@ public class TransferController : ControllerBase
 
     public TransferController(ITranferService transferService)
     {
+        
         _transferService = transferService;
     }
 
@@ -34,7 +37,7 @@ public class TransferController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<TransferDto>> CreateAsync([FromBody] CreateTranferRequest request)
+    public async Task<ActionResult<TransferDto>> CreateAsync([FromBody] CreateTransferRequest request)
     {
         var transfer = await _transferService.CreateAsync(request);
 
@@ -44,7 +47,7 @@ public class TransferController : ControllerBase
     [HttpPut("{id:int:min(1)}")]
     public async Task<ActionResult> PutAsync(
         [FromRoute] int id,
-        [FromBody] UpdateTranferRequest request)
+        [FromBody] UpdateTransferRequest request)
     {
         if (id != request.Id)
         {

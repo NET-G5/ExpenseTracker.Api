@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace ExpenseTracker.Application.Validators.Transfer;
 
-public sealed class UpdateTransferValidation : AbstractValidator<UpdateTranferRequest>
+public sealed class UpdateTransferValidation : AbstractValidator<UpdateTransferRequest>
 {
     public UpdateTransferValidation()
     {
