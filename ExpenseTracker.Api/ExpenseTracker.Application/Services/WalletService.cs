@@ -15,7 +15,6 @@ public class WalletService : IWalletService
 {
     private readonly IMapper _mapper;
     private readonly IApplicationDbContext _context;
-    private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly ICurrentUserService _currentUserService;
 
     public WalletService(
@@ -26,7 +25,6 @@ public class WalletService : IWalletService
     {
         _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         _context = context ?? throw new ArgumentNullException(nameof(context));
-        _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
         _currentUserService = currentUserService ?? throw new ArgumentNullException(nameof(currentUserService));
     }
 
@@ -51,14 +49,8 @@ public class WalletService : IWalletService
     public async Task<WalletDto> GetByIdAsync(WalletRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
-
-        var wallet = await _context.Wallets
-            .FirstOrDefaultAsync(w => w.Id == request.WalletId && w.OwnerId == _currentUserService.GetUserId());
-
-        if (wallet is null)
-        {
-            throw new EntityNotFoundException($"Wallet with id: {request.WalletId} is not found.");
-        }
+        
+        var wallet = await GetAndValidateWalletAsync(request.Id);
 
         var dto = _mapper.Map<WalletDto>(wallet);
         return dto;
@@ -66,38 +58,25 @@ public class WalletService : IWalletService
 
     public async Task<WalletDto> CreateAsync(CreateWalletRequest request)
     {
-        var owner = await _userManager.FindByIdAsync(_currentUserService.GetUserId().ToString());
+        ArgumentNullException.ThrowIfNull(request);
 
-        if (owner is null)
-        {
-            throw new EntityNotFoundException($"User is not found.");
-        }
+        var entity = _mapper.Map<Wallet>(request);
+        entity.OwnerId = _currentUserService.GetUserId();
 
-        var wallet = _mapper.Map<Wallet>(request);
-        wallet.OwnerId = _currentUserService.GetUserId();
-
-        _context.Wallets.Add(wallet);
+        _context.Wallets.Add(entity);
         await _context.SaveChangesAsync();
 
-        var dto = _mapper.Map<WalletDto>(wallet);
+        var dto = _mapper.Map<WalletDto>(entity);
+
         return dto;
+
     }
 
     public async Task UpdateAsync(UpdateWalletRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var wallet = await _context.Wallets
-            .FirstOrDefaultAsync(w => w.Id == request.Id && w.OwnerId == _currentUserService.GetUserId());
-
-        if (wallet is null)
-        {
-            throw new EntityNotFoundException($"Wallet with id: {request.Id} is not found.");
-        }
-
-        wallet.Name = request.Name ?? wallet.Name;
-        wallet.Description = request.Description ?? wallet.Description;
-        wallet.Balance = request.Balance != default ? request.Balance : wallet.Balance;
+        var wallet = await GetAndValidateWalletAsync(request.Id);
 
         _context.Wallets.Update(wallet);
         await _context.SaveChangesAsync();
@@ -107,20 +86,23 @@ public class WalletService : IWalletService
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var wallet = await _context.Wallets
-            .FirstOrDefaultAsync(w => w.Id == request.WalletId && w.OwnerId == _currentUserService.GetUserId());
-
-        if (wallet is null)
-        {
-            throw new EntityNotFoundException($"Wallet with id: {request.WalletId} is not found.");
-        }
-
-        if (wallet.Transfers.Any())
-        {
-            throw new ApplicationException($"Cannot delete wallet with transfers associated.");
-        }
+        var wallet = await GetAndValidateWalletAsync(request.Id);
 
         _context.Wallets.Remove(wallet);
         await _context.SaveChangesAsync();
+    }
+
+    private async Task<Wallet> GetAndValidateWalletAsync(int walletId)
+    {
+        var ownerId = _currentUserService.GetUserId();
+        var wallet = await _context.Wallets
+            .FirstOrDefaultAsync(x => x.Id == walletId && x.OwnerId == ownerId);
+
+        if (wallet is null)
+        {
+            throw new EntityNotFoundException($"Wallet with id: {walletId} is not found.");
+        }
+
+        return wallet;
     }
 }
