@@ -1,6 +1,6 @@
 namespace ExpenseTracker.Application.Requests.Transfer;
 
-public record CreateTranferRequest(
+public record CreateTransferRequest(
     string Title,
     string? Notes,
     decimal Amount,

@@ -20,15 +20,8 @@ public sealed class UpdateWalletValidation : AbstractValidator<UpdateWalletReque
         RuleFor(request => request.Balance)
             .GreaterThanOrEqualTo(0).WithMessage("Balance must be zero or a positive value.");
 
-        RuleFor(request => request.OwnerId)
-            .NotEmpty().WithMessage("OwnerId is required.")
-            .Must(ownerId => ownerId != Guid.Empty).WithMessage("OwnerId must be a valid GUID.");
+   
 
-        RuleFor(request => request.Owner)
-            .NotNull().WithMessage("Owner is required.");
-
-        RuleFor(request => request.Transfers)
-            .NotNull().WithMessage("Transfers cannot be null.")
-            .Must(transfers => transfers.All(t => t != null)).WithMessage("Transfers must contain valid items.");
+   
     }
 }

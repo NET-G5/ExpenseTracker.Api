@@ -10,7 +10,7 @@ internal sealed class TransferMappings : Profile
     public TransferMappings()
     {
         CreateMap<Transfer, TransferDto>();
-        CreateMap<CreateTranferRequest, Transfer>();
-        CreateMap<UpdateTranferRequest, Transfer>();
+        CreateMap<CreateTransferRequest, Transfer>();
+        CreateMap<UpdateTransferRequest, Transfer>();
     }
 }

@@ -11,7 +11,7 @@ public class Category : AuditableEntity
     public CategoryType Type { get; set; }
 
     public Guid OwnerId { get; set; }
-    public virtual IdentityUser<Guid> Owner { get; set; }
+    public required virtual IdentityUser<Guid> Owner { get; set; }
 
     public virtual ICollection<Transfer> Transfers { get; set; }
 

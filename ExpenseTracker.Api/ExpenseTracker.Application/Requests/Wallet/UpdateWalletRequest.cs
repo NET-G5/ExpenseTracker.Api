@@ -6,14 +6,8 @@ public record UpdateWalletRequest(
     int Id,
     string Name,
     string? Description,
-    decimal Balance,
-    Guid OwnerId,
-    IdentityUser<Guid> Owner,
-    List<Domain.Entities.Transfer> Transfers)
+    decimal Balance)
     : CreateWalletRequest(
         Name,
         Description,
-        Balance,
-        OwnerId,
-        Owner,
-        Transfers);
+        Balance);

@@ -2,10 +2,12 @@ using ExpenseTracker.Application.DTOs;
 using ExpenseTracker.Application.Interfaces;
 using ExpenseTracker.Application.QueryParameters;
 using ExpenseTracker.Application.Requests.Wallet;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ExpenseTracker.Api.Controllers
 {
+    [Authorize]
     [Route("api/wallets")]
     [ApiController]
     public class WalletsController : ControllerBase
@@ -26,7 +28,7 @@ namespace ExpenseTracker.Api.Controllers
         }
 
         [HttpGet("{id:int:min(1)}", Name = nameof(GetWalletByIdAsync))]
-        public async Task<ActionResult<WalletDto>> GetWalletByIdAsync(WalletRequest request)
+        public async Task<ActionResult<WalletDto>> GetWalletByIdAsync([FromRoute] WalletRequest request)
         {
             var wallet = await _walletService.GetByIdAsync(request);
 

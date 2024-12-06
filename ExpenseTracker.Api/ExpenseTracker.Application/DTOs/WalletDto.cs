@@ -6,7 +6,4 @@ public record WalletDto(
     int Id,
     string Name,
     string? Description,
-    decimal Balance,
-    Guid OwnerId,
-    IdentityUser<Guid> Owner,
-    List<Domain.Entities.Transfer> Transfers);
+    decimal Balance);
