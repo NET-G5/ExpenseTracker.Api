@@ -1,13 +1,15 @@
 ﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
+using AutoMapper.QueryableExtensions;
 using ExpenseTracker.Application.DTOs;
 using ExpenseTracker.Application.Interfaces;
 using ExpenseTracker.Application.QueryParameters;
 using ExpenseTracker.Application.Requests.Category;
 using ExpenseTracker.Domain.Entities;
+using ExpenseTracker.Domain.Enums;
 using ExpenseTracker.Domain.Exceptions;
 using ExpenseTracker.Domain.Interfaces;
-using AutoMapper.QueryableExtensions;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace ExpenseTracker.Application.Services;
 
@@ -27,21 +29,11 @@ internal sealed class CategoryService : ICategoryService
         _currentUserService = currentUserService ?? throw new ArgumentNullException(nameof(currentUserService));
     }
 
-    public async Task<List<CategoryDto>> GetAsync(QueryParametersBase queryParameters)
+    public async Task<List<CategoryDto>> GetAsync(CategoryQueryParameters queryParameters)
     {
         ArgumentNullException.ThrowIfNull(queryParameters);
 
-        var ownerId = _currentUserService.GetUserId();
-        var query = _context.Categories
-            .AsNoTracking()
-            .Where(x => x.OwnerId == ownerId);
-
-        if (!string.IsNullOrEmpty(queryParameters.Search))
-        {
-            query = query.Where(x => x.Name.Contains(queryParameters.Search)
-                || (x.Description != null && x.Description.Contains(queryParameters.Search)));
-        }
-
+        var query = FilterCategories(queryParameters);
         query = ApplySort(query, queryParameters.SortBy);
 
         var categories = await query
@@ -74,6 +66,29 @@ internal sealed class CategoryService : ICategoryService
         var dto = _mapper.Map<CategoryDto>(entity);
 
         return dto;
+    }
+
+    public async Task CreateDefaultsForNewUserAsync(IdentityUser<Guid> user)
+    {
+        var income = new Category
+        {
+            Name = "Default Income Category",
+            Description = "This is default income category.",
+            CreatedBy = user.UserName!,
+            Owner = user,
+            Type = CategoryType.Income,
+        };
+        var expense = new Category
+        {
+            Name = "Default Expense Category",
+            Description = "This is default expense category.",
+            CreatedBy = user.UserName!,
+            Owner = user,
+            Type = CategoryType.Expense,
+        };
+
+        _context.Categories.AddRange(income, expense);
+        await _context.SaveChangesAsync();
     }
 
     public async Task UpdateAsync(UpdateCategoryRequest request)
@@ -110,6 +125,26 @@ internal sealed class CategoryService : ICategoryService
         }
 
         return category;
+    }
+
+    private IQueryable<Category> FilterCategories(CategoryQueryParameters queryParameters)
+    {
+        var query = _context.Categories
+            .AsNoTracking()
+            .Where(x => x.OwnerId == _currentUserService.GetUserId());
+
+        if (!string.IsNullOrEmpty(queryParameters.Search))
+        {
+            query = query.Where(x => x.Name.Contains(queryParameters.Search)
+                || (x.Description != null && x.Description.Contains(queryParameters.Search)));
+        }
+
+        if (queryParameters.Type.HasValue)
+        {
+            query = query.Where(x => x.Type == queryParameters.Type.Value);
+        }
+
+        return query;
     }
 
     private static IQueryable<Category> ApplySort(IQueryable<Category> query, string? sortBy)

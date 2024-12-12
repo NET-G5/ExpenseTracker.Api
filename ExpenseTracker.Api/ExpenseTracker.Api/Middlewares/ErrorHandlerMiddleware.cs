@@ -22,7 +22,7 @@ internal sealed class ErrorHandlerMiddleware
         {
             await _next(context);
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             await HandleAsync(ex, context);
         }
@@ -45,6 +45,7 @@ internal sealed class ErrorHandlerMiddleware
         {
             EntityNotFoundException => new ProblemDetails { Status = StatusCodes.Status404NotFound, Title = "Not Found", Detail = exception.Message },
             UserNameAlreadyTakenException => new ProblemDetails { Status = StatusCodes.Status400BadRequest, Title = "User Name already taken", Detail = exception.Message },
+            InvalidLoginRequestException => new ProblemDetails { Status = StatusCodes.Status401Unauthorized, Title = "Invalid username or password", Detail = "Verify that the account with given username exists and password matches" },
             _ => new ProblemDetails { Status = StatusCodes.Status500InternalServerError, Title = "Internal Server Error", Detail = exception.Message }
         };
 }

@@ -1,9 +1,11 @@
 using ExpenseTracker.Application.DTOs;
 using ExpenseTracker.Application.Interfaces;
+using ExpenseTracker.Application.Models;
 using ExpenseTracker.Application.QueryParameters;
 using ExpenseTracker.Application.Requests.Transfer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 
 namespace ExpenseTracker.Api.Controllers;
 
@@ -12,22 +14,25 @@ namespace ExpenseTracker.Api.Controllers;
 [ApiController]
 public class TransferController : ControllerBase
 {
-    private readonly ITranferService _transferService;
+    private readonly ITransferService _transferService;
 
-    public TransferController(ITranferService transferService)
+    public TransferController(ITransferService transferService)
     {
         
         _transferService = transferService;
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<TransferDto>>> GetAsync([FromQuery] QueryParametersBase queryParameters)
+    public async Task<ActionResult<PaginatedResponse<TransferDto>>> GetAsync([FromQuery] TransferQueryParameters queryParameters)
     {
         var transfers = await _transferService.GetAsync(queryParameters);
 
-        return Ok(transfers);
+        var metadataJson = JsonConvert.SerializeObject(transfers.PaginationMetadata);
+        HttpContext.Response.Headers.Append("X-Pagination", metadataJson);
+
+        return Ok(transfers.Data);
     }
-    
+
     [HttpGet("{id:int:min(1)}", Name = nameof(GetTransferByIdAsync))]
     public async Task<ActionResult<TransferDto>> GetTransferByIdAsync([FromRoute] TransferRequest request)
     {

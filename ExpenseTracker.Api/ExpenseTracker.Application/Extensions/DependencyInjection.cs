@@ -24,7 +24,7 @@ public static class DependencyInjection
         
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IWalletService, WalletService>();
-        services.AddScoped<ITranferService, TransferService>();
+        services.AddScoped<ITransferService, TransferService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddSingleton<IJwtTokenHandler, JwtTokenHandler>();
         services.AddSingleton<ICurrentUserService, CurrentUserService>();
