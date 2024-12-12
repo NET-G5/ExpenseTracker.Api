@@ -8,14 +8,20 @@ namespace ExpenseTracker.Application.Services;
 internal sealed class AuthService : IAuthService
 {
     private readonly UserManager<IdentityUser<Guid>> _userManager;
-    private readonly IJwtTokenHandler _jwtTokenHandler; 
+    private readonly IJwtTokenHandler _jwtTokenHandler;
+    private readonly ICategoryService _categoryService;
+    private readonly IWalletService _walletService;
 
     public AuthService(
         UserManager<IdentityUser<Guid>> userManager, 
-        IJwtTokenHandler jwtTokenHandler)
+        IJwtTokenHandler jwtTokenHandler,
+        ICategoryService categoryService,
+        IWalletService walletService)
     {
         _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
         _jwtTokenHandler = jwtTokenHandler ?? throw new ArgumentNullException(nameof(jwtTokenHandler));
+        _categoryService = categoryService ?? throw new ArgumentNullException(nameof(categoryService));
+        _walletService = walletService ?? throw new ArgumentNullException(nameof(walletService));
     }
     
     public async Task<string> LoginAsync(LoginRequest request)
@@ -57,6 +63,9 @@ internal sealed class AuthService : IAuthService
             var errors = string.Join("; ", createResult.Errors.Select(e => e.Description));
             throw new Exception($"User creation failed: {errors}");
         }
+
+        await _categoryService.CreateDefaultsForNewUserAsync(newUser);
+        await _walletService.CreateDefaultForNewUserAsync(newUser);
     }
 
 }

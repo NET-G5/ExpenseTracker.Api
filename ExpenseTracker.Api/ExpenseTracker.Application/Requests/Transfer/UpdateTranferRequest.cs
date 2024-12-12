@@ -1,6 +1,6 @@
 namespace ExpenseTracker.Application.Requests.Transfer;
 
-public record UpdateTranferRequest(
+public record UpdateTransferRequest(
     int Id,
     string Title,
     string? Notes,
@@ -8,7 +8,7 @@ public record UpdateTranferRequest(
     DateTime Date,
     int CategoryId,
     int WalletId)
-    : CreateTranferRequest(
+    : CreateTransferRequest(
         Title,
         Notes,
         Amount,
