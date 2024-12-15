@@ -5,10 +5,8 @@ using ExpenseTracker.Application.Interfaces;
 using ExpenseTracker.Application.QueryParameters;
 using ExpenseTracker.Application.Requests.Category;
 using ExpenseTracker.Domain.Entities;
-using ExpenseTracker.Domain.Enums;
 using ExpenseTracker.Domain.Exceptions;
 using ExpenseTracker.Domain.Interfaces;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace ExpenseTracker.Application.Services;
@@ -66,29 +64,6 @@ internal sealed class CategoryService : ICategoryService
         var dto = _mapper.Map<CategoryDto>(entity);
 
         return dto;
-    }
-
-    public async Task CreateDefaultsForNewUserAsync(IdentityUser<Guid> user)
-    {
-        var income = new Category
-        {
-            Name = "Default Income Category",
-            Description = "This is default income category.",
-            CreatedBy = user.UserName!,
-            Owner = user,
-            Type = CategoryType.Income,
-        };
-        var expense = new Category
-        {
-            Name = "Default Expense Category",
-            Description = "This is default expense category.",
-            CreatedBy = user.UserName!,
-            Owner = user,
-            Type = CategoryType.Expense,
-        };
-
-        _context.Categories.AddRange(income, expense);
-        await _context.SaveChangesAsync();
     }
 
     public async Task UpdateAsync(UpdateCategoryRequest request)

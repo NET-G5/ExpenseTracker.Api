@@ -67,23 +67,6 @@ public class WalletService : IWalletService
         return dto;
     }
 
-    public async Task CreateDefaultForNewUserAsync(IdentityUser<Guid> user)
-    {
-        ArgumentNullException.ThrowIfNull(user);
-
-        var newWallet = new Wallet
-        {
-            Name = "Default Wallet",
-            Description = "This is default wallet",
-            Balance = 0,
-            CreatedBy = user.UserName!,
-            Owner = user,
-        };
-
-        _context.Wallets.Add(newWallet);
-        await _context.SaveChangesAsync();
-    }
-
     public async Task UpdateAsync(UpdateWalletRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);

@@ -1,8 +1,5 @@
 using ExpenseTracker.Application.Configurations;
-using ExpenseTracker.Application.Extensions;
-using ExpenseTracker.Domain.Interfaces;
 using ExpenseTracker.Infrastructure.Extensions;
-using ExpenseTracker.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -11,54 +8,51 @@ using System.Text;
 
 namespace ExpenseTracker.Api.Extensions;
 
-public static class DependencyInjection
+internal static class DependencyInjection
 {
-    public static IServiceCollection RegisterServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection RegisterApi(this IServiceCollection services, IConfiguration configuration)
     {
-        services.RegisterApplication(configuration);
         services.RegisterInfrastructure(configuration);
-        services.AddScoped<IApplicationDbContext, ApplicationDbContext>();
-
+        AddOptions(services, configuration);
+        AddControllers(services);
         AddSwagger(services);
         AddAuthentication(services, configuration);
 
         return services;
     }
 
-    private static void AddAuthentication(IServiceCollection services, IConfiguration configuration)
+    private static void AddOptions(IServiceCollection services, IConfiguration configuration)
     {
-        var section = configuration.GetSection(JwtOptions.SectionName);
-        var jwtOptions = section.Get<JwtOptions>();
-
-        if (jwtOptions is null)
-        {
-            throw new InvalidOperationException("JWT configuration settings did not load correctly.");
-        }
+        services
+            .AddOptions<JwtOptions>()
+            .Bind(configuration.GetSection(JwtOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
         services
-            .AddAuthentication(options =>
-            {
-                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
-            .AddJwtBearer(options =>
-            {
-                options.RequireHttpsMetadata = true;
+            .AddOptions<EmailOptions>()
+            .Bind(configuration.GetSection(EmailOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
+        services
+            .AddOptions<SmsOptions>()
+            .Bind(configuration.GetSection(SmsOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+    }
 
-                    ValidIssuer = jwtOptions.Issuer,
-                    ValidAudience = jwtOptions.Audience,
-                    IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(jwtOptions.SecretKey))
-                };
-            });
+    private static void AddControllers(this IServiceCollection services)
+    {
+        services.AddControllers(options =>
+        {
+            options.SuppressAsyncSuffixInActionNames = false;
+            options.ReturnHttpNotAcceptable = true;
+            options.RespectBrowserAcceptHeader = true;
+        })
+            .AddNewtonsoftJson()
+            .AddXmlSerializerFormatters()
+            .AddXmlDataContractSerializerFormatters();
     }
 
     private static void AddSwagger(IServiceCollection services)
@@ -108,5 +102,41 @@ public static class DependencyInjection
             var xmlFileName = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
             options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFileName));
         });
+    }
+
+    private static void AddAuthentication(IServiceCollection services, IConfiguration configuration)
+    {
+        var section = configuration.GetSection(JwtOptions.SectionName);
+        var jwtOptions = section.Get<JwtOptions>();
+
+        if (jwtOptions is null)
+        {
+            throw new InvalidOperationException("JWT configuration settings did not load correctly.");
+        }
+
+        services
+            .AddAuthentication(options =>
+            {
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.RequireHttpsMetadata = true;
+
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+
+                    ValidIssuer = jwtOptions.Issuer,
+                    ValidAudience = jwtOptions.Audience,
+                    IssuerSigningKey = new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(jwtOptions.SecretKey))
+                };
+            });
     }
 }

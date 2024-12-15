@@ -5,4 +5,7 @@ public sealed record RegisterRequest(
     string UserName,
     string Password,
     string ConfirmPassword,
-    string? ConfirmUrl);
+    string ConfirmUrl,
+    string? PhoneNumber,
+    string? OS,
+    string? Browser);

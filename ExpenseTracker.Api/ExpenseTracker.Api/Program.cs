@@ -1,19 +1,16 @@
 using ExpenseTracker.Api.Extensions;
+using ExpenseTracker.Application.Constants;
+using ExpenseTracker.Application.Extensions;
+using ExpenseTracker.Application.Interfaces;
+using Hangfire;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers(options =>
-{
-    options.SuppressAsyncSuffixInActionNames = false;
-    options.ReturnHttpNotAcceptable = true;
-    options.RespectBrowserAcceptHeader = true;
-})
-    .AddNewtonsoftJson()
-    .AddXmlSerializerFormatters()
-    .AddXmlDataContractSerializerFormatters();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.RegisterServices(builder.Configuration);
+builder.Services
+    .RegisterApplication(builder.Configuration)
+    .RegisterApi(builder.Configuration);
+
+builder.Services.AddHttpClient();
 
 var app = builder.Build();
 
@@ -23,6 +20,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
     app.UseDatabaseSeeder();
 }
+
+app.UseHangfireDashboard();
+
+RecurringJob.AddOrUpdate<IMonthlyReportService>(
+    BackgroundJobConstants.MonthlyReportId,
+    job => job.SendMonthlyReportToAllUsersAsync(),
+    Cron.Monthly(1));
 
 app.UseErrorHandler();
 
