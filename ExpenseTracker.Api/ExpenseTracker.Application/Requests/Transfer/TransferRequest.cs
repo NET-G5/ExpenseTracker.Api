@@ -1,3 +1,3 @@
 namespace ExpenseTracker.Application.Requests.Transfer;
 
-public sealed record TransferRequest(int TransferId);
+public sealed record TransferRequest(int Id);

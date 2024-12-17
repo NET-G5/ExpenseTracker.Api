@@ -1,6 +1,5 @@
 using AutoMapper;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
+using AutoMapper.QueryableExtensions;
 using ExpenseTracker.Application.DTOs;
 using ExpenseTracker.Application.Interfaces;
 using ExpenseTracker.Application.QueryParameters;
@@ -8,6 +7,8 @@ using ExpenseTracker.Application.Requests.Wallet;
 using ExpenseTracker.Domain.Entities;
 using ExpenseTracker.Domain.Exceptions;
 using ExpenseTracker.Domain.Interfaces;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace ExpenseTracker.Application.Services;
 
@@ -15,7 +16,6 @@ public class WalletService : IWalletService
 {
     private readonly IMapper _mapper;
     private readonly IApplicationDbContext _context;
-    private readonly UserManager<IdentityUser<Guid>> _userManager;
     private readonly ICurrentUserService _currentUserService;
 
     public WalletService(
@@ -26,60 +26,44 @@ public class WalletService : IWalletService
     {
         _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         _context = context ?? throw new ArgumentNullException(nameof(context));
-        _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
         _currentUserService = currentUserService ?? throw new ArgumentNullException(nameof(currentUserService));
     }
 
-    public async Task<List<WalletDto>> GetAsync(QueryParametersBase queryParameters)
+    public async Task<List<WalletDto>> GetAsync(WalletQueryParameters queryParameters)
     {
-        var query = _context.Wallets
-            .AsNoTracking()
-            .Where(w => w.OwnerId == _currentUserService.GetUserId());
+        var query = FilterWallets(queryParameters);
+        query = SortWallets(query, queryParameters.SortBy);
 
-        if (!string.IsNullOrEmpty(queryParameters.Search))
-        {
-            query = query.Where(w => w.Name.Contains(queryParameters.Search)
-                || (w.Description != null && w.Description.Contains(queryParameters.Search)));
-        }
+        var wallets = await query
+            .ProjectTo<WalletDto>(_mapper.ConfigurationProvider)
+            .ToListAsync();
 
-        var wallets = await query.ToListAsync();
-        var walletDtos = _mapper.Map<List<WalletDto>>(wallets);
-
-        return walletDtos;
+        return wallets;
     }
 
     public async Task<WalletDto> GetByIdAsync(WalletRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var wallet = await _context.Wallets
-            .FirstOrDefaultAsync(w => w.Id == request.WalletId && w.OwnerId == _currentUserService.GetUserId());
-
-        if (wallet is null)
-        {
-            throw new EntityNotFoundException($"Wallet with id: {request.WalletId} is not found.");
-        }
+        var wallet = await GetAndValidateWalletAsync(request.Id);
 
         var dto = _mapper.Map<WalletDto>(wallet);
+
         return dto;
     }
 
     public async Task<WalletDto> CreateAsync(CreateWalletRequest request)
     {
-        var owner = await _userManager.FindByIdAsync(_currentUserService.GetUserId().ToString());
+        ArgumentNullException.ThrowIfNull(request);
 
-        if (owner is null)
-        {
-            throw new EntityNotFoundException($"User is not found.");
-        }
+        var entity = _mapper.Map<Wallet>(request);
+        entity.OwnerId = _currentUserService.GetUserId();
 
-        var wallet = _mapper.Map<Wallet>(request);
-        wallet.OwnerId = _currentUserService.GetUserId();
-
-        _context.Wallets.Add(wallet);
+        _context.Wallets.Add(entity);
         await _context.SaveChangesAsync();
 
-        var dto = _mapper.Map<WalletDto>(wallet);
+        var dto = _mapper.Map<WalletDto>(entity);
+
         return dto;
     }
 
@@ -87,17 +71,7 @@ public class WalletService : IWalletService
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var wallet = await _context.Wallets
-            .FirstOrDefaultAsync(w => w.Id == request.Id && w.OwnerId == _currentUserService.GetUserId());
-
-        if (wallet is null)
-        {
-            throw new EntityNotFoundException($"Wallet with id: {request.Id} is not found.");
-        }
-
-        wallet.Name = request.Name ?? wallet.Name;
-        wallet.Description = request.Description ?? wallet.Description;
-        wallet.Balance = request.Balance != default ? request.Balance : wallet.Balance;
+        var wallet = _mapper.Map<Wallet>(request);
 
         _context.Wallets.Update(wallet);
         await _context.SaveChangesAsync();
@@ -107,20 +81,58 @@ public class WalletService : IWalletService
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var wallet = await _context.Wallets
-            .FirstOrDefaultAsync(w => w.Id == request.WalletId && w.OwnerId == _currentUserService.GetUserId());
-
-        if (wallet is null)
-        {
-            throw new EntityNotFoundException($"Wallet with id: {request.WalletId} is not found.");
-        }
-
-        if (wallet.Transfers.Any())
-        {
-            throw new ApplicationException($"Cannot delete wallet with transfers associated.");
-        }
+        var wallet = await GetAndValidateWalletAsync(request.Id);
 
         _context.Wallets.Remove(wallet);
         await _context.SaveChangesAsync();
     }
+
+    private async Task<Wallet> GetAndValidateWalletAsync(int walletId)
+    {
+        var currentUserId = _currentUserService.GetUserId();
+        var wallet = await _context.Wallets
+            .FirstOrDefaultAsync(w => w.Id == walletId && w.OwnerId == currentUserId);
+
+        if (wallet is null)
+        {
+            throw new EntityNotFoundException($"Wallet with id: {walletId} is not found.");
+        }
+
+        return wallet;
+    }
+
+    private IQueryable<Wallet> FilterWallets(WalletQueryParameters queryParameters)
+    {
+        var currentUserId = _currentUserService.GetUserId();
+        var query = _context.Wallets
+            .AsNoTracking()
+            .Where(x => x.OwnerId == currentUserId);
+
+        if (!string.IsNullOrEmpty(queryParameters.Search))
+        {
+            query = query.Where(x => x.Name.Contains(queryParameters.Search)
+                || (x.Description != null && x.Description.Contains(queryParameters.Search)));
+        }
+
+        if (queryParameters.MinBalance.HasValue)
+        {
+            query = query.Where(x => x.Balance >= queryParameters.MinBalance.Value);
+        }
+
+        if (queryParameters.MaxBalance.HasValue)
+        {
+            query = query.Where(x => x.Balance <= queryParameters.MaxBalance.Value);
+        }
+
+        return query;
+    }
+
+    private static IQueryable<Wallet> SortWallets(IQueryable<Wallet> query, string? sortBy)
+       => sortBy switch
+       {
+           "name_asc" => query.OrderBy(x => x.Name),
+           "name_desc" => query.OrderByDescending(x => x.Name),
+           "balance_asc" => query.OrderBy(x => x.Balance),
+           _ => query.OrderByDescending(x => x.Balance)
+       };
 }

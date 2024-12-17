@@ -6,7 +6,7 @@ namespace ExpenseTracker.Application.Interfaces;
 
 public interface ICategoryService
 {
-    Task<List<CategoryDto>> GetAsync(QueryParametersBase queryParameters);
+    Task<List<CategoryDto>> GetAsync(CategoryQueryParameters queryParameters);
     Task<CategoryDto> GetByIdAsync(CategoryRequest request);
     Task<CategoryDto> CreateAsync(CreateCategoryRequest request);
     Task UpdateAsync(UpdateCategoryRequest request);

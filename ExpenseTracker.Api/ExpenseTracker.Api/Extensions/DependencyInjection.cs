@@ -1,66 +1,110 @@
-using System.Text;
 using ExpenseTracker.Application.Configurations;
-using ExpenseTracker.Application.Extensions;
-using ExpenseTracker.Domain.Interfaces;
 using ExpenseTracker.Infrastructure.Extensions;
-using ExpenseTracker.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Reflection;
+using System.Text;
 
 namespace ExpenseTracker.Api.Extensions;
 
-public static class DependencyInjection
+internal static class DependencyInjection
 {
-    public static IServiceCollection RegisterServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection RegisterApi(this IServiceCollection services, IConfiguration configuration)
     {
-        services.RegisterApplication(configuration);
         services.RegisterInfrastructure(configuration);
-        services.AddScoped<IApplicationDbContext, ApplicationDbContext>();
-
-        AddAuthenticaton(services, configuration);
-
-        services.AddSwaggerGen(c =>
-        {
-            c.SwaggerDoc("v1", new OpenApiInfo { Title = "Your API", Version = "v1" });
-
-            // Define the security scheme
-            c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-            {
-                Description = @"JWT Authorization header using the Bearer scheme. 
-                       Enter 'Bearer' [space] and then your token in the text input below.
-                       Example: 'Bearer 12345abcdef'",
-                Name = "Authorization",
-                In = ParameterLocation.Header,
-                Type = SecuritySchemeType.ApiKey,
-                Scheme = "Bearer"
-            });
-
-            // Define the security requirement
-            c.AddSecurityRequirement(new OpenApiSecurityRequirement()
-            {
-                {
-                    new OpenApiSecurityScheme
-                    {
-                        Reference = new OpenApiReference
-                        {
-                            Type = ReferenceType.SecurityScheme,
-                            Id = "Bearer"
-                        },
-                        Scheme = "oauth2",
-                        Name = "Bearer",
-                        In = ParameterLocation.Header,
-
-                    },
-                    []
-                }
-            });
-        });
+        AddOptions(services, configuration);
+        AddControllers(services);
+        AddSwagger(services);
+        AddAuthentication(services, configuration);
 
         return services;
     }
 
-    private static void AddAuthenticaton(IServiceCollection services, IConfiguration configuration)
+    private static void AddOptions(IServiceCollection services, IConfiguration configuration)
+    {
+        services
+            .AddOptions<JwtOptions>()
+            .Bind(configuration.GetSection(JwtOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services
+            .AddOptions<EmailOptions>()
+            .Bind(configuration.GetSection(EmailOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services
+            .AddOptions<SmsOptions>()
+            .Bind(configuration.GetSection(SmsOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+    }
+
+    private static void AddControllers(this IServiceCollection services)
+    {
+        services.AddControllers(options =>
+        {
+            options.SuppressAsyncSuffixInActionNames = false;
+            options.ReturnHttpNotAcceptable = true;
+            options.RespectBrowserAcceptHeader = true;
+        })
+            .AddNewtonsoftJson()
+            .AddXmlSerializerFormatters()
+            .AddXmlDataContractSerializerFormatters();
+    }
+
+    private static void AddSwagger(IServiceCollection services)
+    {
+        services.AddSwaggerGen(options =>
+        {
+            options.SwaggerDoc("v1", new OpenApiInfo
+            {
+                Version = "v1",
+                Title = "Expense Tracker API",
+                Description = "Expense Tracker REST API",
+                Contact = new OpenApiContact
+                {
+                    Name = "Davronbek To'lqinbekov",
+                    Email = "davronbek8733@gmail.com",
+                    Url = new Uri("https://expense-tracker.uz"),
+                },
+                License = new OpenApiLicense
+                {
+                    Name = "MIT",
+                    Url = new Uri("https://opensource.org/licenses/MIT")
+                }
+            });
+
+            var securityScheme = new OpenApiSecurityScheme
+            {
+                BearerFormat = "JWT",
+                Name = "JWT Authentication",
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.Http,
+                Scheme = JwtBearerDefaults.AuthenticationScheme,
+                Description = "Enter your JWT token in the text input below.",
+                Reference = new OpenApiReference
+                {
+                    Id = JwtBearerDefaults.AuthenticationScheme,
+                    Type = ReferenceType.SecurityScheme
+                }
+            };
+
+            options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, securityScheme);
+
+            options.AddSecurityRequirement(new OpenApiSecurityRequirement()
+            {
+                { securityScheme, [] }
+            });
+
+            var xmlFileName = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFileName));
+        });
+    }
+
+    private static void AddAuthentication(IServiceCollection services, IConfiguration configuration)
     {
         var section = configuration.GetSection(JwtOptions.SectionName);
         var jwtOptions = section.Get<JwtOptions>();
@@ -87,7 +131,7 @@ public static class DependencyInjection
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
-                    
+
                     ValidIssuer = jwtOptions.Issuer,
                     ValidAudience = jwtOptions.Audience,
                     IssuerSigningKey = new SymmetricSecurityKey(

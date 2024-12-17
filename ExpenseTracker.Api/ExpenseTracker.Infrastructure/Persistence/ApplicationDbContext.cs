@@ -1,6 +1,5 @@
 ﻿using ExpenseTracker.Domain.Entities;
 using ExpenseTracker.Domain.Interfaces;
-using ExpenseTracker.Infrastructure.Persistence.Interceptors;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +13,7 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser<Guid>, Identi
     public virtual DbSet<Transfer> Transfers { get; set; }
     public virtual DbSet<Wallet> Wallets { get; set; }
 
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) 
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
     {
     }
@@ -61,6 +60,8 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser<Guid>, Identi
         {
             e.ToTable("UserRole");
         });
+
+
 
         #endregion
     }

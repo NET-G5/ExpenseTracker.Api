@@ -7,4 +7,6 @@ public record TransferDto(
     decimal Amount,
     DateTime Date,
     int CategoryId,
-    int WalletId);
+    string CategoryName,
+    int WalletId,
+    string WalletName);

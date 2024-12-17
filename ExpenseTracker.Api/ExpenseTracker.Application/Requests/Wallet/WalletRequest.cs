@@ -1,3 +1,3 @@
 namespace ExpenseTracker.Application.Requests.Wallet;
 
-public sealed record WalletRequest(int WalletId);
+public sealed record WalletRequest(int Id);

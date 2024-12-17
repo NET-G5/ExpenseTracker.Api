@@ -6,7 +6,7 @@ namespace ExpenseTracker.Application.Interfaces;
 
 public interface IWalletService
 {
-    Task<List<WalletDto>> GetAsync(QueryParametersBase queryParameters);
+    Task<List<WalletDto>> GetAsync(WalletQueryParameters queryParameters);
     Task<WalletDto> GetByIdAsync(WalletRequest request);
     Task<WalletDto> CreateAsync(CreateWalletRequest request);
     Task UpdateAsync(UpdateWalletRequest request);
