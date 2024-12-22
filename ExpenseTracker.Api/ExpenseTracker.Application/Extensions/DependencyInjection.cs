@@ -25,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IMonthlyReportService, MonthlyReportService>();
         services.AddScoped<INewUserService, NewUserService>();
+        services.AddScoped<IDashboardService, DashboardService>();
         services.AddSingleton<IJwtTokenHandler, JwtTokenHandler>();
         services.AddSingleton<ICurrentUserService, CurrentUserService>();
 
