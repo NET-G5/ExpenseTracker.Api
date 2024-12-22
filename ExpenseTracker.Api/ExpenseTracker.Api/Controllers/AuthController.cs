@@ -41,7 +41,7 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult> RegisterAsync(RegisterRequest request)
+    public async Task<ActionResult> RegisterAsync([FromBody] RegisterRequest request)
     {
         await _authService.RegisterAsync(request);
 
