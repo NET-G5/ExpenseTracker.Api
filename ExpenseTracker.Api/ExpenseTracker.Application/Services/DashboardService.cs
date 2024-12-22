@@ -105,9 +105,9 @@ internal sealed class DashboardService : IDashboardService
     private void PopulateDoughnutChart(DashboardDto dto)
     {
         dto.DoughnutChartDatas = _context.Transfers
-     .Where(x => x.Category.Type == CategoryType.Expense) // Ushbu qism SQLda ishlaydi
+     .Where(x => x.Category.Type == CategoryType.Expense) 
      .GroupBy(j => j.Category.Id)
-     .AsEnumerable() // Qolgan qismi xotirada ishlaydi
+     .AsEnumerable() 
      .Select(k => new DoughnutChart
      (
          k.Sum(j => j.Amount),
