@@ -1,4 +1,5 @@
 ﻿namespace ExpenseTracker.Application.Models;
+
 public sealed class SplineChart
 {
     public string Day { get; set; }
@@ -11,6 +12,7 @@ public sealed class SplineChart
         Income = income;
         Expense = expense;
     }
+
     public SplineChart()
     {
 

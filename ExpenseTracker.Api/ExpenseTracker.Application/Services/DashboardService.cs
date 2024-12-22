@@ -6,6 +6,7 @@ using ExpenseTracker.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace ExpenseTracker.Application.Services;
+
 internal sealed class DashboardService : IDashboardService
 {
     private readonly IApplicationDbContext _context;
@@ -26,6 +27,7 @@ internal sealed class DashboardService : IDashboardService
 
         return dto;
     }
+
     private void PopulateWidgets(DashboardDto dto)
     {
         var totalIncome = _context.Transfers
@@ -48,7 +50,6 @@ internal sealed class DashboardService : IDashboardService
             .AsNoTracking()
             .ToList();
 
-        //Income
         List<SplineChart> incomeSummary = allTransfers
             .Where(x => x.Category.Type == CategoryType.Income)
             .GroupBy(j => j.Date)
@@ -59,7 +60,6 @@ internal sealed class DashboardService : IDashboardService
             })
             .ToList();
 
-        //Expense
         List<SplineChart> expenseSummary = allTransfers
             .Where(x => x.Category.Type == CategoryType.Expense)
             .GroupBy(j => j.Date)
@@ -70,8 +70,6 @@ internal sealed class DashboardService : IDashboardService
             })
             .ToList();
 
-        //Combine Income & Expense
-        //Last 7 Days
         DateTime startDate = DateTime.UtcNow.AddDays(-6);
         DateTime endDate = DateTime.UtcNow;
 
@@ -91,7 +89,7 @@ internal sealed class DashboardService : IDashboardService
                        Expense = totalExpense,
                    };
 
-        dto.SpilneChartDatas = data
+        dto.SpilneChartData = data
                         .Where(x => x.Income != null && x.Expense != null)
                         .GroupBy(x => x.Day)
                         .Select(x => new SplineChart(
@@ -104,10 +102,10 @@ internal sealed class DashboardService : IDashboardService
 
     private void PopulateDoughnutChart(DashboardDto dto)
     {
-        dto.DoughnutChartDatas = _context.Transfers
-     .Where(x => x.Category.Type == CategoryType.Expense) // Ushbu qism SQLda ishlaydi
+        dto.DoughnutChartData = _context.Transfers
+     .Where(x => x.Category.Type == CategoryType.Expense)
      .GroupBy(j => j.Category.Id)
-     .AsEnumerable() // Qolgan qismi xotirada ishlaydi
+     .AsEnumerable()
      .Select(k => new DoughnutChart
      (
          k.Sum(j => j.Amount),
@@ -127,17 +125,17 @@ internal sealed class DashboardService : IDashboardService
             .OrderByDescending(x => x.Date)
             .Take(10)
             .Select(x => new TransferDto
-            (
-                x.Id,
-                x.Title,
-                x.Notes,
-                x.Amount,
-                x.Date,
-                x.Category.Id,
-                x.Category.Name,
-                x.Wallet.Id,
-                x.Wallet.Name
-            )
+                (
+                    x.Id,
+                    x.Title,
+                    x.Notes,
+                    x.Amount,
+                    x.Date,
+                    x.Category.Id,
+                    x.Category.Name,
+                    x.Wallet.Id,
+                    x.Wallet.Name
+                )
             )
             .ToList();
     }

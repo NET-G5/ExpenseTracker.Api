@@ -1,4 +1,5 @@
 ﻿namespace ExpenseTracker.Application.Models;
+
 public sealed class DoughnutChart
 {
     public decimal Amount { get; set; }
@@ -11,6 +12,7 @@ public sealed class DoughnutChart
         CategoryName = categoryName;
         FormattedAmount = formattedAmount;
     }
+
     public DoughnutChart()
     {
 
