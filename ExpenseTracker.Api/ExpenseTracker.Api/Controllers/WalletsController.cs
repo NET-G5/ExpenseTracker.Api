@@ -99,7 +99,7 @@ public class WalletsController : ControllerBase
     /// Deletes a single Wallet
     /// </summary>
     /// <param name="request">Wallet ID to delete </param>
-    [HttpDelete("{walletId:int:min(1)}")]
+    [HttpDelete("{Id:int:min(1)}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]

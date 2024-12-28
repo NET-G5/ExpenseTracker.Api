@@ -31,7 +31,6 @@ public sealed class CurrentUserService : ICurrentUserService
 
     public string GetUserName()
     {
-        return "";
         var user = _httpContextAccessor.HttpContext?.User
             ?? throw new InvalidOperationException($"Unable to get user info from HttpContext.");
 
