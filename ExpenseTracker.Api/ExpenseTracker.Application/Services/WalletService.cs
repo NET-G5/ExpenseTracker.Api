@@ -72,6 +72,8 @@ public class WalletService : IWalletService
         ArgumentNullException.ThrowIfNull(request);
 
         var wallet = _mapper.Map<Wallet>(request);
+        wallet.OwnerId = _currentUserService.GetUserId();
+        wallet.CreatedBy = _currentUserService.GetUserName();
 
         _context.Wallets.Update(wallet);
         await _context.SaveChangesAsync();

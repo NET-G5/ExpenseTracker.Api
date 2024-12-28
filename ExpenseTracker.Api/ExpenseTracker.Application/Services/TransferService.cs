@@ -61,6 +61,7 @@ internal sealed class TransferService : ITransferService
 
         var currentUserId = _currentUserService.GetUserId();
         var transfer = await _context.Transfers
+            .Include(x => x.Wallet)
             .FirstOrDefaultAsync(x => x.Id == request.Id && x.Wallet.OwnerId == currentUserId);
 
         if (transfer is null)
