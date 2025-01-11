@@ -1,3 +1,4 @@
+using ExpenseTracker.Application.Extensions;
 using ExpenseTracker.Application.Interfaces;
 using ExpenseTracker.Application.Models;
 using ExpenseTracker.Application.Requests.Auth;
@@ -122,18 +123,17 @@ internal sealed class AuthService : IAuthService
     {
         var emailMessage = new EmailMessage(user.Email!, user.UserName!, "Welcome to Expense Tracker!", null);
 
-        _backgroundJobClient.Enqueue("email_welcome", () => _emailService.SendWelcome(emailMessage));
+        _backgroundJobClient.Enqueue(() => _emailService.SendWelcome(emailMessage));
     }
 
     private async Task SendPasswordResetEmailAsync(IdentityUser<Guid> user, ResetPasswordRequest request)
     {
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-        var redirectUrl = $"{request.RedirectUrl}?token={token}&email={request.Email}";
-
+        var redirectUrl = Helper.GetCallbackUrl(request.RedirectUrl, token, request.Email);
         var emailMessage = new EmailMessage(user.Email!, user.UserName!, "Password Reset", redirectUrl);
         var userInfo = new UserInfo(request.Browser, request.OS);
 
-        _backgroundJobClient.Enqueue("email_reset-password", () => _emailService.SendResetPassword(emailMessage, userInfo));
+        _backgroundJobClient.Enqueue(() => _emailService.SendResetPassword(emailMessage, userInfo));
     }
 
     private async Task<IdentityUser<Guid>> GetAndValidateUserAsync(string email)
