@@ -1,11 +1,11 @@
-﻿using ExpenseTracker.Application.Interfaces;
+﻿using ExpenseTracker.Application.Extensions;
+using ExpenseTracker.Application.Interfaces;
 using ExpenseTracker.Application.Models;
 using ExpenseTracker.Application.Requests.Auth;
 using ExpenseTracker.Domain.Entities;
 using ExpenseTracker.Domain.Enums;
 using ExpenseTracker.Domain.Interfaces;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 
 namespace ExpenseTracker.Application.Services;
@@ -85,23 +85,11 @@ internal sealed class NewUserService : INewUserService
     {
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
 
-        var redirectUrl = GetCallbackUrl(request.ConfirmUrl, token, request.Email);
+        var redirectUrl = Helper.GetCallbackUrl(request.ConfirmUrl, token, request.Email);
         var userInfo = new UserInfo(request.Browser ?? "Unknown browser", request.OS ?? "Unknown operating system");
         var emailMessage = new EmailMessage(user.Email!, user.UserName!, "Email confirmation", redirectUrl);
 
         _emailService.SendEmailConfirmation(emailMessage, userInfo);
     }
 
-    private static string GetCallbackUrl(string clientUrl, string token, string email)
-    {
-        Dictionary<string, string> queryParams = new Dictionary<string, string>
-        {
-            { "email", email },
-            { "token", token }
-        };
-
-        var callbackUrl = QueryHelpers.AddQueryString(clientUrl, queryParams);
-
-        return callbackUrl;
-    }
 }

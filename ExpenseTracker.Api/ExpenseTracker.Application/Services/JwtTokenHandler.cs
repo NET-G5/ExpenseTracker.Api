@@ -1,11 +1,11 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using ExpenseTracker.Application.Configurations;
 using ExpenseTracker.Application.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace ExpenseTracker.Application.Services;
 
@@ -29,7 +29,7 @@ internal sealed class JwtTokenHandler : IJwtTokenHandler
             signingCredentials: signingKey,
             expires: DateTime.UtcNow.AddHours(_options.ExpiresInHours));
 
-        var  token = new JwtSecurityTokenHandler().WriteToken(securityToken);
+        var token = new JwtSecurityTokenHandler().WriteToken(securityToken);
 
         return token;
     }
@@ -50,7 +50,7 @@ internal sealed class JwtTokenHandler : IJwtTokenHandler
 
         return claims;
     }
-    
+
     private SigningCredentials GetClaimingKey()
     {
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.SecretKey));
