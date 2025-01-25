@@ -1,47 +1,93 @@
+using ExpenseTracker.Application.Configurations;
 using ExpenseTracker.Application.Interfaces;
 using ExpenseTracker.Application.Models;
 using ExpenseTracker.Application.Requests.Auth;
+using ExpenseTracker.Application.Responses.Auth;
+using ExpenseTracker.Domain.Entities;
 using ExpenseTracker.Domain.Exceptions;
+using ExpenseTracker.Domain.Interfaces;
 using Hangfire;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace ExpenseTracker.Application.Services;
 
 internal sealed class AuthService : IAuthService
 {
+    private readonly TokenSettings _tokenSettings;
     private readonly UserManager<IdentityUser<Guid>> _userManager;
-    private readonly IJwtTokenHandler _jwtTokenHandler;
+    private readonly ITokenHandler _jwtTokenHandler;
     private readonly INewUserService _newUserService;
     private readonly IBackgroundJobClient _backgroundJobClient;
     private readonly IEmailService _emailService;
+    private readonly ILogger<AuthService> _logger;
+    private readonly IApplicationDbContext _context;
 
     public AuthService(
         UserManager<IdentityUser<Guid>> userManager,
-        IJwtTokenHandler jwtTokenHandler,
+        ITokenHandler jwtTokenHandler,
         IEmailService emailService,
         IBackgroundJobClient backgroundJobClient,
-        INewUserService newUserService)
+        INewUserService newUserService,
+        ILogger<AuthService> logger,
+        IApplicationDbContext context,
+        IOptions<TokenSettings> tokenSettings)
     {
         _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
         _jwtTokenHandler = jwtTokenHandler ?? throw new ArgumentNullException(nameof(jwtTokenHandler));
         _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
         _backgroundJobClient = backgroundJobClient ?? throw new ArgumentNullException(nameof(backgroundJobClient));
-        _newUserService = newUserService;
+        _newUserService = newUserService ?? throw new ArgumentNullException(nameof(newUserService));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _context = context ?? throw new ArgumentNullException(nameof(context));
+        _tokenSettings = tokenSettings?.Value ?? throw new ArgumentNullException(nameof(tokenSettings));
     }
 
-    public async Task<string> LoginAsync(LoginRequest request)
+    public async Task<LoginResponse> LoginAsync(LoginRequest request)
     {
         var user = await _userManager.FindByNameAsync(request.UserName);
 
         if (user is null || !user.EmailConfirmed || !await _userManager.CheckPasswordAsync(user, request.Password))
         {
+            _logger.LogWarning("Invalid login attempt for username {UserName}", request.UserName);
             throw new InvalidLoginRequestException("Invalid username or password");
         }
 
         var roles = await _userManager.GetRolesAsync(user);
-        var token = _jwtTokenHandler.GenerateToken(user, roles);
+        var accessToken = _jwtTokenHandler.GenerateAccessToken(user, roles);
+        var refreshToken = _jwtTokenHandler.GenerateRefreshToken();
+        await SaveRefreshTokenAsync(user, refreshToken);
 
-        return token;
+
+        return new LoginResponse(accessToken, refreshToken);
+    }
+
+    public async Task<RefreshTokenResponse> RefreshAsync(RefreshTokenRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var token = await _context.RefreshTokens
+            .FirstOrDefaultAsync(x => x.Token == request.RefreshToken);
+
+        if (token is null || token.IsRevoked)
+        {
+            throw new InvalidLoginRequestException("TODO: Change exception type");
+        }
+
+        if (token.ExpiresAtUtc < DateTime.UtcNow)
+        {
+            token.IsRevoked = true;
+            await _context.SaveChangesAsync();
+
+            throw new InvalidLoginRequestException("TODO: Change exception type");
+        }
+
+        var roles = await _userManager.GetRolesAsync(token.User);
+        var accessToken = _jwtTokenHandler.GenerateAccessToken(token.User, roles);
+
+        return new RefreshTokenResponse(accessToken);
     }
 
     public async Task RegisterAsync(RegisterRequest request)
@@ -52,6 +98,7 @@ internal sealed class AuthService : IAuthService
 
         if (existingUser is not null)
         {
+            _logger.LogWarning("Registration attempt with existing username {UserName}", request.UserName);
             throw new UserNameAlreadyTakenException($"Username: {request.UserName} is already taken.");
         }
 
@@ -94,6 +141,13 @@ internal sealed class AuthService : IAuthService
         ArgumentNullException.ThrowIfNull(request);
 
         var user = await GetAndValidateUserAsync(request.Email);
+        var refreshToken = await _context.RefreshTokens
+            .FirstOrDefaultAsync(x => x.UserId == user.Id && !x.IsRevoked);
+
+        if (refreshToken is not null)
+        {
+            refreshToken.IsRevoked = true;
+        }
 
         await SendPasswordResetEmailAsync(user, request);
     }
@@ -146,5 +200,19 @@ internal sealed class AuthService : IAuthService
         }
 
         return user;
+    }
+
+    private async Task SaveRefreshTokenAsync(IdentityUser<Guid> user, string refreshToken)
+    {
+        var tokenEntity = new RefreshToken
+        {
+            Token = refreshToken,
+            IsRevoked = false,
+            ExpiresAtUtc = DateTime.UtcNow.AddDays(_tokenSettings.RefreshExpiresInDays),
+            UserId = user.Id,
+            User = user,
+        };
+        _context.RefreshTokens.Add(tokenEntity);
+        await _context.SaveChangesAsync();
     }
 }

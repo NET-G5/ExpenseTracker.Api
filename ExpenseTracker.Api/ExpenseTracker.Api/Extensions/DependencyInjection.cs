@@ -24,8 +24,8 @@ internal static class DependencyInjection
     private static void AddOptions(IServiceCollection services, IConfiguration configuration)
     {
         services
-            .AddOptions<JwtOptions>()
-            .Bind(configuration.GetSection(JwtOptions.SectionName))
+            .AddOptions<TokenSettings>()
+            .Bind(configuration.GetSection(TokenSettings.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
@@ -106,8 +106,8 @@ internal static class DependencyInjection
 
     private static void AddAuthentication(IServiceCollection services, IConfiguration configuration)
     {
-        var section = configuration.GetSection(JwtOptions.SectionName);
-        var jwtOptions = section.Get<JwtOptions>();
+        var section = configuration.GetSection(TokenSettings.SectionName);
+        var jwtOptions = section.Get<TokenSettings>();
 
         if (jwtOptions is null)
         {

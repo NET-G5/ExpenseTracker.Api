@@ -1,24 +1,25 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using ExpenseTracker.Application.Configurations;
 using ExpenseTracker.Application.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace ExpenseTracker.Application.Services;
 
-internal sealed class JwtTokenHandler : IJwtTokenHandler
+internal sealed class TokenHandler : ITokenHandler
 {
-    private readonly JwtOptions _options;
+    private readonly TokenSettings _options;
 
-    public JwtTokenHandler(IOptions<JwtOptions> options)
+    public TokenHandler(IOptions<TokenSettings> options)
     {
         _options = options.Value ?? throw new ArgumentNullException(nameof(options));
     }
 
-    public string GenerateToken(IdentityUser<Guid> user, IEnumerable<string> roles)
+    public string GenerateAccessToken(IdentityUser<Guid> user, IEnumerable<string> roles)
     {
         var claims = GetClaims(user, roles);
         var signingKey = GetClaimingKey();
@@ -27,9 +28,20 @@ internal sealed class JwtTokenHandler : IJwtTokenHandler
             audience: _options.Audience,
             claims: claims,
             signingCredentials: signingKey,
-            expires: DateTime.UtcNow.AddHours(_options.ExpiresInHours));
+            expires: DateTime.UtcNow.AddMinutes(_options.JwtExpiresInHours));
 
-        var  token = new JwtSecurityTokenHandler().WriteToken(securityToken);
+        var token = new JwtSecurityTokenHandler().WriteToken(securityToken);
+
+        return token;
+    }
+
+    public string GenerateRefreshToken()
+    {
+        var randomNumbers = new byte[32];
+        using var randomGenerator = RandomNumberGenerator.Create();
+        randomGenerator.GetBytes(randomNumbers);
+
+        var token = Convert.ToBase64String(randomNumbers);
 
         return token;
     }
@@ -50,7 +62,7 @@ internal sealed class JwtTokenHandler : IJwtTokenHandler
 
         return claims;
     }
-    
+
     private SigningCredentials GetClaimingKey()
     {
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.SecretKey));
