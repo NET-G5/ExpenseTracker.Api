@@ -12,10 +12,12 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser<Guid>, Identi
     public virtual DbSet<Category> Categories { get; set; }
     public virtual DbSet<Transfer> Transfers { get; set; }
     public virtual DbSet<Wallet> Wallets { get; set; }
+    public virtual DbSet<RefreshToken> RefreshTokens { get; set; }
 
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
     {
+        Database.Migrate();
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

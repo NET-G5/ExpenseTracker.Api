@@ -12,6 +12,7 @@ public interface IApplicationDbContext
     DbSet<IdentityUser<Guid>> Users { get; set; }
     DbSet<IdentityRole<Guid>> Roles { get; set; }
     DbSet<IdentityUserRole<Guid>> UserRoles { get; set; }
+    DbSet<RefreshToken> RefreshTokens { get; set; }
 
     int SaveChanges();
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
