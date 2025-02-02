@@ -109,7 +109,7 @@ public class CategoriesController : ControllerBase
     {
         if (id != request.Id)
         {
-            return BadRequest($"Route parameter does not match with body parameter: {request.Id}");
+            return BadRequest($"Route parameter ID: {id} does not match with body parameter: {request.Id}");
         }
 
         await _categoryService.UpdateAsync(request);
