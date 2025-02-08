@@ -27,4 +27,8 @@
     <PackageReference Include="UAParser" Version="3.1.47" />
   </ItemGroup>
 
+	<ItemGroup>
+		<InternalsVisibleTo Include="ExpenseTracker.Tests.Unit"/>
+	</ItemGroup>
+
 </Project>

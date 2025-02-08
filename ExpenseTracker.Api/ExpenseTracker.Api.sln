@@ -11,6 +11,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpenseTracker.Infrastructu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpenseTracker.Application", "ExpenseTracker.Application\ExpenseTracker.Application.csproj", "{177D4E02-8F67-44C9-8B73-8E8581EBFB25}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{1CF993A4-C6AA-4C08-9BB6-C2CDEAB40BB6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpenseTracker.Tests.Unit", "Tests\ExpenseTracker.Tests.Unit\ExpenseTracker.Tests.Unit\ExpenseTracker.Tests.Unit.csproj", "{D74CF1BF-450E-46C1-8EEF-E70C91F050C2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,9 +37,16 @@ Global
 		{177D4E02-8F67-44C9-8B73-8E8581EBFB25}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{177D4E02-8F67-44C9-8B73-8E8581EBFB25}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{177D4E02-8F67-44C9-8B73-8E8581EBFB25}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D74CF1BF-450E-46C1-8EEF-E70C91F050C2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D74CF1BF-450E-46C1-8EEF-E70C91F050C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D74CF1BF-450E-46C1-8EEF-E70C91F050C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D74CF1BF-450E-46C1-8EEF-E70C91F050C2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{D74CF1BF-450E-46C1-8EEF-E70C91F050C2} = {1CF993A4-C6AA-4C08-9BB6-C2CDEAB40BB6}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {69A4B167-568D-46F7-B135-8B3A508887F1}

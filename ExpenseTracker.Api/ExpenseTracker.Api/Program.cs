@@ -10,16 +10,16 @@ using Serilog.Events;
 try
 {
     Log.Logger = new LoggerConfiguration()
-        .MinimumLevel.Debug()
-        .WriteTo.Console()
-        .WriteTo.File("logs/logs_.txt", LogEventLevel.Information, rollingInterval: RollingInterval.Day)
-        .WriteTo.File("logs/errors_.txt", LogEventLevel.Error, rollingInterval: RollingInterval.Day)
-        .CreateLogger();
+        .WriteTo.File("logs/startup_logs.txt", LogEventLevel.Information)
+        .CreateBootstrapLogger();
 
     var builder = WebApplication.CreateBuilder(args);
 
+    Log.Logger.Information("API is starting...");
+
     builder.Logging.ClearProviders();
-    builder.Host.UseSerilog();
+    builder.Host.UseSerilog((context, _, configuration) => 
+        configuration.ReadFrom.Configuration(context.Configuration));
 
     builder.Services
         .RegisterApplication(builder.Configuration)
@@ -30,7 +30,9 @@ try
     var app = builder.Build();
 
     app.UseSwagger();
+    
     app.UseSwaggerUI();
+    
     app.UseDatabaseSeeder();
 
     app.UseHangfireDashboard("/hangfire", new DashboardOptions
@@ -67,9 +69,12 @@ try
 
     app.MapControllers();
 
+    Log.Logger.Information("Application is running...");
+
     app.Run();
 }
 catch (Exception ex)
 {
-    Log.Error(ex.Message);
+    Log.Logger.Error(ex, "Unexpected error occurred during application startup. {Message}", ex.Message);
+    throw;
 }

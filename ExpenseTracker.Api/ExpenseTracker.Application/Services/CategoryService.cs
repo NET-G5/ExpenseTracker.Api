@@ -108,7 +108,7 @@ internal sealed class CategoryService : ICategoryService
             .AsNoTracking()
             .Where(x => x.OwnerId == _currentUserService.GetUserId());
 
-        if (!string.IsNullOrEmpty(queryParameters.Search))
+        if (!string.IsNullOrWhiteSpace(queryParameters.Search))
         {
             query = query.Where(x => x.Name.Contains(queryParameters.Search)
                 || (x.Description != null && x.Description.Contains(queryParameters.Search)));
